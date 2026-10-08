@@ -1,0 +1,27 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "accelerate-analyzer",
+  "description": "Combat robot engineering skills for Claude Code: weapon-impact simulation on your robot's CAD, and STEP file analysis.",
+  "owner": {
+    "name": "Lily Lin",
+    "email": "lily.lin2719@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "combat-robot-analyzer",
+      "description": "Find out what an opponent's spinning weapon does to your robot: analyse a STEP, set materials and the weapon (presets or fully custom), mesh, solve with OpenRadioss and read the damage, all locally under nix-shell.",
+      "author": { "name": "Lily Lin" },
+      "category": "engineering",
+      "source": "./plugins/combat-robot-analyzer",
+      "keywords": ["combat-robotics", "fea", "openradioss", "impact", "cad"]
+    },
+    {
+      "name": "cad-step",
+      "description": "Analyze STEP/STP CAD files: assembly trees, part placements and coordinate frames, hole and bolt-circle tables, mass properties, clash detection, fastener bills of materials, SVG technical drawings, entity queries and revision diffs.",
+      "author": { "name": "Lily Lin" },
+      "category": "engineering",
+      "source": "./plugins/cad-step",
+      "keywords": ["cad", "step", "stp", "iso-10303", "mechanical", "assembly"]
+    }
+  ]
+}

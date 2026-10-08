@@ -1,0 +1,847 @@
+# Material library, in the mm_Mg_s consistent unit system:
+#   length mm | mass Mg (tonne) | time s | stress MPa | density Mg/mm^3 | force N
+#
+# `law: johnson_cook` maps to Radioss LAW2, where flow stress is
+#   sigma = (a + b * eps_p^n) * (1 + c * ln(eps_dot/eps_dot_0))
+# so `yield` is the JC "A" term. Rate terms are optional; omit them for a
+# rate-independent run.
+#
+# Rate terms come unfiltered: explicit dynamics feeds LAW2 the raw element
+# strain rate, whose noise inflates the flow stress, and the starter says so
+# (warning 1220). A sensible cutoff depends on the mesh and timestep rather
+# than the material, so it is not baked into these entries — add it per model:
+#   strain_rate_filter: 1     # Fsmooth
+#   f_cut: 100000             # Hz; ~1/(10*dt) is a reasonable starting point
+#
+# Include this into a spec with the `materials:` key, or copy the entries you
+# need. Values are handbook-typical, not certified — check them against your
+# actual stock before trusting a result quantitatively.
+#
+# ── Provenance ──
+#   [JC]  a published Johnson-Cook fit (Johnson & Cook 1983/85, Lesuer 2000,
+#         and the usual ballistic literature). Trust these at impact rates.
+#   [HB]  handbook-derived: A is the 0.2% offset yield, B and n fitted so the
+#         curve passes through UTS at the tabulated elongation. Fine for
+#         deformation and stiffness; treat rate and failure with suspicion.
+#
+# ── Naming ──
+#   Printed (FDM) polymers come in `_xy` / `_z` pairs: `_xy` is in-plane
+#   (beads loaded along their length), `_z` carries the interlayer knockdown
+#   for tension normal to the layers. See the FDM section for the factors.
+#
+# ── Sections ──
+#   aluminium · steel · abrasion-resistant plate · stainless · titanium
+#   stock thermoplastics · printed thermoplastics · hyperelastics
+#   orthotropic shells (FABRI) · orthotropic composites (COMPSH) · stand-ins
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# Aluminium alloys
+# ══════════════════════════════════════════════════════════════════════════
+# Chassis, baseplates, wedges, pulleys, weapon hubs. The 7xxx alloys buy
+# strength at the cost of weldability and notch toughness; 6061 forgives
+# bad design, 7075 does not.
+
+aluminium_7075_t6:                # [JC] the combat-robot default for chassis
+  law: johnson_cook
+  density: 2.81e-9
+  young: 71700
+  poisson: 0.33
+  yield: 503          # JC A
+  hardening_b: 477    # JC B
+  hardening_n: 0.52   # JC n
+  eps_max: 0.12       # plastic strain at failure
+  strain_rate_c: 0.001
+  strain_rate_eps0: 1.0
+
+aluminium_7068_t6511:             # [HB] strongest common Al; premium hubs/uprights
+  law: johnson_cook
+  density: 2.85e-9
+  young: 73800
+  poisson: 0.33
+  yield: 683
+  hardening_b: 80     # UTS 710: almost no hardening left at peak age
+  hardening_n: 0.45
+  eps_max: 0.09       # ~20% less ductile than 7075 — notch sensitive
+  sig_max: 730
+
+aluminium_7050_t7451:             # [HB] thick plate; better toughness than 7075
+  law: johnson_cook
+  density: 2.83e-9
+  young: 71700
+  poisson: 0.33
+  yield: 469
+  hardening_b: 425
+  hardening_n: 0.50
+  eps_max: 0.13
+
+aluminium_6061_t6:                # [JC] weldable, forgiving, everywhere
+  law: johnson_cook
+  density: 2.70e-9
+  young: 68900
+  poisson: 0.33
+  yield: 324
+  hardening_b: 114
+  hardening_n: 0.42
+  eps_max: 0.17
+
+aluminium_2024_t351:              # [JC] Johnson & Cook's original fit
+  law: johnson_cook
+  density: 2.78e-9
+  young: 73100
+  poisson: 0.33
+  yield: 265
+  hardening_b: 426
+  hardening_n: 0.34
+  eps_max: 0.18
+  strain_rate_c: 0.015
+  strain_rate_eps0: 1.0
+
+aluminium_5052_h32:               # [HB] formable sheet — folded armour, ducting
+  law: johnson_cook
+  density: 2.68e-9
+  young: 70300
+  poisson: 0.33
+  yield: 195
+  hardening_b: 190
+  hardening_n: 0.50
+  eps_max: 0.14
+
+aluminium_6063_t5:                # [HB] extrusion stock; weak, cheap, available
+  law: johnson_cook
+  density: 2.70e-9
+  young: 68900
+  poisson: 0.33
+  yield: 145
+  hardening_b: 80
+  hardening_n: 0.40
+  eps_max: 0.12
+
+aluminium_mic6_cast:              # [HB] cast tooling plate — flat, stable, BRITTLE
+  law: johnson_cook
+  density: 2.80e-9
+  young: 71000
+  poisson: 0.33
+  yield: 110
+  hardening_b: 60
+  hardening_n: 0.35
+  eps_max: 0.03       # ~3% elongation; do not use it where it takes a hit
+  failure:
+    model: tensstrain
+    eps_t1: 0.020
+    eps_t2: 0.032
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# Steel alloys
+# ══════════════════════════════════════════════════════════════════════════
+# Weapon bars, shafts, teeth, armour backing. Hardness buys penetration
+# resistance and loses it in impact toughness — the two hardened tool steels
+# at the bottom carry erosion blocks because they really do chip.
+
+steel_1018:                       # [JC] mild bar stock, brackets, shafts
+  law: johnson_cook
+  density: 7.87e-9
+  young: 200000
+  poisson: 0.29
+  yield: 520
+  hardening_b: 269
+  hardening_n: 0.282
+  eps_max: 0.55
+  strain_rate_c: 0.0476
+  strain_rate_eps0: 1.0
+
+steel_4130:                       # [HB] normalised; welded tube frames
+  law: johnson_cook
+  density: 7.85e-9
+  young: 205000
+  poisson: 0.29
+  yield: 435
+  hardening_b: 380
+  hardening_n: 0.30
+  eps_max: 0.28
+
+steel_4140_qt:                    # [JC] quench & temper; weapon shafts, live axles
+  law: johnson_cook
+  density: 7.85e-9
+  young: 205000
+  poisson: 0.29
+  yield: 595
+  hardening_b: 580
+  hardening_n: 0.133
+  eps_max: 0.20
+  strain_rate_c: 0.023
+  strain_rate_eps0: 1.0
+
+steel_4340:                       # [JC] Johnson & Cook's original fit, ~300 HB
+  law: johnson_cook
+  density: 7.83e-9
+  young: 205000
+  poisson: 0.29
+  yield: 792
+  hardening_b: 510
+  hardening_n: 0.26
+  eps_max: 0.30
+  strain_rate_c: 0.014
+  strain_rate_eps0: 1.0
+
+steel_4340_50hrc:                 # [HB] hardened for weapon bars — tough at strength
+  law: johnson_cook
+  density: 7.83e-9
+  young: 205000
+  poisson: 0.29
+  yield: 1500
+  hardening_b: 500
+  hardening_n: 0.20
+  eps_max: 0.08
+  sig_max: 1850
+
+steel_300m:                       # [HB] 4340 + Si; landing gear grade, premium shafts
+  law: johnson_cook
+  density: 7.83e-9
+  young: 205000
+  poisson: 0.29
+  yield: 1690
+  hardening_b: 450
+  hardening_n: 0.22
+  eps_max: 0.09
+  sig_max: 1990
+
+steel_maraging_c300:              # [HB] the good weapon-bar steel: 1900 MPa AND tough
+  law: johnson_cook
+  density: 8.00e-9
+  young: 190000
+  poisson: 0.30
+  yield: 1900
+  hardening_b: 300
+  hardening_n: 0.25
+  eps_max: 0.06       # low uniform elongation, but very high fracture toughness
+  sig_max: 2050
+
+steel_s7_tool:                    # [HB] shock-resisting tool steel; impact teeth
+  law: johnson_cook
+  density: 7.83e-9
+  young: 207000
+  poisson: 0.30
+  yield: 1450
+  hardening_b: 600
+  hardening_n: 0.25
+  eps_max: 0.10
+
+steel_h13_50hrc:                  # [HB] hot-work tool steel; teeth, inserts
+  law: johnson_cook
+  density: 7.80e-9
+  young: 210000
+  poisson: 0.30
+  yield: 1400
+  hardening_b: 500
+  hardening_n: 0.22
+  eps_max: 0.08
+
+steel_a2_58hrc:                   # [HB] air-hardening tool steel; teeth that chip
+  law: johnson_cook
+  density: 7.86e-9
+  young: 203000
+  poisson: 0.30
+  yield: 1550
+  hardening_b: 400
+  hardening_n: 0.18
+  eps_max: 0.04
+  failure:
+    model: tensstrain
+    eps_t1: 0.025
+    eps_t2: 0.040
+
+steel_d2_60hrc:                   # [HB] wear-resistant, genuinely brittle in impact
+  law: johnson_cook
+  density: 7.70e-9
+  young: 210000
+  poisson: 0.30
+  yield: 1800
+  hardening_b: 350
+  hardening_n: 0.15
+  eps_max: 0.02
+  failure:
+    model: tensstrain
+    eps_t1: 0.012
+    eps_t2: 0.020
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# Abrasion-resistant plate (AR / Hardox / Armox)
+# ══════════════════════════════════════════════════════════════════════════
+# Armour and weapon bars. Hardness rises left to right, impact toughness
+# falls; AR600 will shatter where AR400 dents. The erosion blocks are sized
+# for notched/edge-loaded geometry — halve them again for a sharp corner.
+
+steel_ar400:                      # [HB] ~400 HBW; the tough end, formable-ish
+  law: johnson_cook
+  density: 7.85e-9
+  young: 205000
+  poisson: 0.30
+  yield: 1000
+  hardening_b: 650
+  hardening_n: 0.30
+  eps_max: 0.16
+
+steel_ar500:                      # [HB] ~500 HBW; the default armour plate
+  law: johnson_cook
+  density: 7.85e-9
+  young: 205000
+  poisson: 0.30
+  yield: 1300
+  hardening_b: 620
+  hardening_n: 0.28
+  eps_max: 0.12
+  failure:
+    model: tensstrain
+    eps_t1: 0.03            # damage onset — stress degradation begins
+    eps_t2: 0.06            # element deletion; ~half of eps_max for notched geometry
+
+steel_hardox_500_tuf:             # [HB] 500 HBW at AR400-class toughness
+  law: johnson_cook
+  density: 7.85e-9
+  young: 205000
+  poisson: 0.30
+  yield: 1250
+  hardening_b: 620
+  hardening_n: 0.30
+  eps_max: 0.20       # ~45 J Charpy at -40C, roughly double plain AR500
+  failure:
+    model: tensstrain
+    eps_t1: 0.06
+    eps_t2: 0.10
+
+steel_ar600:                      # [HB] ~600 HBW; maximum hardness, minimum mercy
+  law: johnson_cook
+  density: 7.85e-9
+  young: 205000
+  poisson: 0.30
+  yield: 1700
+  hardening_b: 700
+  hardening_n: 0.28
+  eps_max: 0.07
+  sig_max: 2100
+  failure:
+    model: tensstrain
+    eps_t1: 0.020
+    eps_t2: 0.035
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# Stainless
+# ══════════════════════════════════════════════════════════════════════════
+
+stainless_304:                    # [JC] fasteners, brackets; enormous work hardening
+  law: johnson_cook
+  density: 8.00e-9
+  young: 193000
+  poisson: 0.30
+  yield: 310
+  hardening_b: 1000
+  hardening_n: 0.65
+  eps_max: 0.60
+  strain_rate_c: 0.07
+  strain_rate_eps0: 1.0
+
+stainless_17_4ph_h900:            # [HB] precipitation hardened; shafts, hardware
+  law: johnson_cook
+  density: 7.80e-9
+  young: 197000
+  poisson: 0.27
+  yield: 1170
+  hardening_b: 450
+  hardening_n: 0.25
+  eps_max: 0.10
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# Titanium
+# ══════════════════════════════════════════════════════════════════════════
+# Armour and structure where mass matters: ~57% the density of steel at
+# useful strength. Poor in wear and galling, and it burns — but as a wedge
+# or an armour panel it is very hard to beat per gram.
+
+titanium_grade2_cp:               # [HB] commercially pure; cheap, ductile armour
+  law: johnson_cook
+  density: 4.51e-9
+  young: 105000
+  poisson: 0.34
+  yield: 275
+  hardening_b: 380
+  hardening_n: 0.32
+  eps_max: 0.28
+
+titanium_grade9_3al25v:           # [HB] "half 6-4"; tube stock, weldable
+  law: johnson_cook
+  density: 4.48e-9
+  young: 100000
+  poisson: 0.32
+  yield: 620
+  hardening_b: 500
+  hardening_n: 0.40
+  eps_max: 0.20
+
+titanium_grade23_eli:             # [HB] 6-4 ELI; lower interstitials, tougher
+  law: johnson_cook
+  density: 4.43e-9
+  young: 113800
+  poisson: 0.342
+  yield: 795
+  hardening_b: 700
+  hardening_n: 0.45
+  eps_max: 0.25
+
+titanium_ti6al4v:                 # [JC] Grade 5 annealed — the standard fit
+  law: johnson_cook
+  density: 4.43e-9
+  young: 113800
+  poisson: 0.342
+  yield: 1098
+  hardening_b: 1092
+  hardening_n: 0.93
+  eps_max: 0.20
+  strain_rate_c: 0.014
+  strain_rate_eps0: 1.0
+
+titanium_grade5_sta:              # [HB] 6-4 solution treated + aged; weapon shafts
+  law: johnson_cook
+  density: 4.43e-9
+  young: 114000
+  poisson: 0.342
+  yield: 1170
+  hardening_b: 700
+  hardening_n: 0.50
+  eps_max: 0.10
+
+titanium_ti5553:                  # [HB] beta alloy; near-steel strength, Ti density
+  law: johnson_cook
+  density: 4.65e-9
+  young: 110000
+  poisson: 0.33
+  yield: 1200
+  hardening_b: 280
+  hardening_n: 0.30
+  eps_max: 0.08
+  sig_max: 1350
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# Stock thermoplastics (machined / sheet)
+# ══════════════════════════════════════════════════════════════════════════
+
+polycarbonate:                    # [HB] lexan armour, top plates
+  law: johnson_cook
+  density: 1.20e-9
+  young: 2300
+  poisson: 0.37
+  yield: 62
+  hardening_b: 40
+  hardening_n: 0.60
+  eps_max: 0.90
+
+uhmw_pe:                          # [HB] the impact sponge — wedges, bumpers, skids
+  law: johnson_cook
+  density: 0.93e-9
+  young: 700
+  poisson: 0.46
+  yield: 21
+  hardening_b: 15
+  hardening_n: 0.70
+  eps_max: 1.50
+
+acetal_delrin:                    # [HB] pulleys, bearing blocks, spacers
+  law: johnson_cook
+  density: 1.41e-9
+  young: 3100
+  poisson: 0.35
+  yield: 70
+  hardening_b: 35
+  hardening_n: 0.55
+  eps_max: 0.30
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# Printed thermoplastics (FDM)
+# ══════════════════════════════════════════════════════════════════════════
+# Interlayer strength is set by the bead weld, not the bulk polymer, so each
+# material comes as an `_xy` / `_z` pair. Use `_z` whenever the peak tensile
+# principal stress runs normal to the layers; run both to bracket an unknown
+# build orientation.
+#
+#   material      k_sigma (Z/XY)   k_E    k_eps    why
+#   PLA+          0.50 (.45-.60)   0.90   0.20     fast vitrification, poor reptation
+#   PETG          0.72 (.65-.80)   0.92   0.25     amorphous, wide soft window
+#   PA12 FDM      0.55 (.45-.65)   0.90   0.20     crystallises before the weld coalesces
+#   PA12 SLS      0.90 (.85-.95)   0.97   0.45     powder bed near Tm — near isotropic
+#   PA6-CF        0.45 (.40-.55)   0.55   0.15     chopped fibre aligns IN-PLANE only
+#
+# Chopped-fibre grades are the most anisotropic of the lot: the fibres
+# reinforce XY and contribute nothing across a layer boundary, so filling a
+# nylon with carbon raises XY stiffness and makes the Z ratio worse.
+#
+# Two things these cards do NOT model: the section is solid, so infill and
+# wall count remain your problem; and the knockdown is a tension knockdown —
+# welds carry compression nearly as well as bulk polymer, so a `_z` card is
+# over-conservative on the compression side of a bending section.
+#
+# Densities are the solid polymer. `strain_rate_eps0: 1.0e-3` is the ISO 527
+# test rate the A/B terms were read at, so the rate term is zero at test
+# conditions. Those rate terms are unfiltered, so either set
+# `strain_rate_filter: 1` with an `f_cut` (see the header) or drop them
+# for a conservative first run.
+
+pla_plus_xy:                      # [HB] toughened PLA, in-plane
+  law: johnson_cook
+  density: 1.24e-9
+  young: 3000
+  poisson: 0.36
+  yield: 40
+  hardening_b: 45
+  hardening_n: 0.50   # ~50 MPa at eps_p 0.05
+  eps_max: 0.05
+  sig_max: 55
+  strain_rate_c: 0.035
+  strain_rate_eps0: 1.0e-3
+
+pla_plus_z:                       # [HB] interlayer: brittle, almost no drawing
+  law: johnson_cook
+  density: 1.24e-9
+  young: 2700
+  poisson: 0.36
+  yield: 20
+  hardening_b: 22
+  hardening_n: 0.50
+  eps_max: 0.003
+  sig_max: 27
+  strain_rate_c: 0.035
+  strain_rate_eps0: 1.0e-3
+  failure:
+    model: tensstrain
+    eps_t1: 0.009     # total equivalent strain — this, not eps_max, deletes it
+    eps_t2: 0.013
+
+petg_xy:                          # [HB] the best-welding common filament
+  law: johnson_cook
+  density: 1.27e-9
+  young: 2000
+  poisson: 0.40
+  yield: 40
+  hardening_b: 25
+  hardening_n: 0.50
+  eps_max: 0.10
+  sig_max: 52
+  strain_rate_c: 0.040
+  strain_rate_eps0: 1.0e-3
+
+petg_z:
+  law: johnson_cook
+  density: 1.27e-9
+  young: 1840
+  poisson: 0.40
+  yield: 29
+  hardening_b: 18
+  hardening_n: 0.50
+  eps_max: 0.020      # retains real ductility, unlike PLA
+  sig_max: 37
+  strain_rate_c: 0.040
+  strain_rate_eps0: 1.0e-3
+  failure:
+    model: tensstrain
+    eps_t1: 0.030
+    eps_t2: 0.042
+
+nylon_pa12_fdm_xy:                # [HB] printed nylon 12 — tough, hygroscopic
+  law: johnson_cook
+  density: 1.01e-9
+  young: 1600
+  poisson: 0.40
+  yield: 32
+  hardening_b: 35
+  hardening_n: 0.60
+  eps_max: 0.15
+  sig_max: 48
+  strain_rate_c: 0.050
+  strain_rate_eps0: 1.0e-3
+
+nylon_pa12_fdm_z:
+  law: johnson_cook
+  density: 1.01e-9
+  young: 1440
+  poisson: 0.40
+  yield: 18
+  hardening_b: 19
+  hardening_n: 0.60
+  eps_max: 0.030
+  sig_max: 26
+  strain_rate_c: 0.050
+  strain_rate_eps0: 1.0e-3
+  failure:
+    model: tensstrain
+    eps_t1: 0.035
+    eps_t2: 0.050
+
+nylon_pa12_sls:                   # [HB] SLS PA12 — near isotropic, 2-5% porosity
+  law: johnson_cook
+  density: 0.98e-9
+  young: 1700
+  poisson: 0.40
+  yield: 35
+  hardening_b: 35
+  hardening_n: 0.60
+  eps_max: 0.18
+  sig_max: 50
+  strain_rate_c: 0.050
+  strain_rate_eps0: 1.0e-3
+
+nylon_pa12_sls_z:                 # [HB] what SLS loses in Z is ductility, not strength
+  law: johnson_cook
+  density: 0.98e-9
+  young: 1650
+  poisson: 0.40
+  yield: 32
+  hardening_b: 32
+  hardening_n: 0.60
+  eps_max: 0.080
+  sig_max: 45
+  strain_rate_c: 0.050
+  strain_rate_eps0: 1.0e-3
+
+nylon_pa6_cf_xy:                  # [HB] chopped-CF nylon 6 (PAHT-CF / Onyx class)
+  law: johnson_cook
+  density: 1.18e-9
+  young: 5500
+  poisson: 0.38
+  yield: 90
+  hardening_b: 40
+  hardening_n: 0.50
+  eps_max: 0.015      # stiff and strong in-plane, but it does not draw
+  sig_max: 105
+
+nylon_pa6_cf_z:                   # [HB] worst Z ratio in the library — see note above
+  law: johnson_cook
+  density: 1.18e-9
+  young: 3000
+  poisson: 0.38
+  yield: 40
+  hardening_b: 18
+  hardening_n: 0.50
+  eps_max: 0.004
+  sig_max: 47
+  failure:
+    model: tensstrain
+    eps_t1: 0.012
+    eps_t2: 0.018
+
+nylon_pa12_cf_xy:                 # [HB] chopped-CF nylon 12; tougher, less stiff
+  law: johnson_cook
+  density: 1.07e-9
+  young: 4000
+  poisson: 0.39
+  yield: 70
+  hardening_b: 35
+  hardening_n: 0.55
+  eps_max: 0.030
+  sig_max: 84
+
+nylon_pa12_cf_z:
+  law: johnson_cook
+  density: 1.07e-9
+  young: 2200
+  poisson: 0.39
+  yield: 32
+  hardening_b: 16
+  hardening_n: 0.55
+  eps_max: 0.008
+  sig_max: 38
+  failure:
+    model: tensstrain
+    eps_t1: 0.018
+    eps_t2: 0.026
+
+nylon_pa66_gf30:                  # [HB] 30% glass-filled, injection moulded (isotropic)
+  law: johnson_cook
+  density: 1.36e-9
+  young: 6500
+  poisson: 0.35
+  yield: 110
+  hardening_b: 45
+  hardening_n: 0.50
+  eps_max: 0.020
+  sig_max: 130
+
+nylon_pa66_dry:                   # [HB] unfilled nylon 6/6, dry as moulded
+  law: johnson_cook
+  density: 1.14e-9
+  young: 2900
+  poisson: 0.39
+  yield: 60
+  hardening_b: 40
+  hardening_n: 0.60
+  eps_max: 0.35       # conditioned (moist) it is softer and far more ductile
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# Hyperelastic (Ogden / Mooney-Rivlin)
+# ══════════════════════════════════════════════════════════════════════════
+#
+# `law: ogden` maps to Radioss /MAT/OGDEN (Law 42). Parameters are the
+# Ogden shear moduli (mu) and exponents (alpha). The solver computes the
+# bulk modulus from Poisson's ratio internally; `bulk_modulus` below is
+# only for the pipeline's timestep estimate.
+#
+# `law: mooney_rivlin` is sugar for Ogden Order=2 with alpha=[2,-2] and
+# mu=[C10, -C01]. Use it when the datasheet gives C10/C01 (the most
+# common published TPU characterisation format).
+#
+# Printed TPU wheels and tyres carry the same interlayer weakness as the
+# rigid filaments, but LAW42 has no yield or failure term to knock down, so
+# there is no `_z` card here: model the anisotropy by orienting the part so
+# the layers are in shear, and treat any tearing prediction as unmodelled.
+
+tpu_shore95a:                     # printed wheels, tyres, impact mounts
+  law: ogden
+  density: 1.15e-9
+  poisson: 0.495
+  mu: [0.382, -0.012]
+  alpha: [1.3, -2.0]
+  bulk_modulus: 2300          # for timestep estimate only
+
+tpu_shore85a:                     # softer tread, grip over durability
+  law: mooney_rivlin
+  density: 1.13e-9
+  poisson: 0.495
+  c10: 0.22
+  c01: 0.055
+  bulk_modulus: 1100
+
+tpu_shore80a:
+  law: mooney_rivlin
+  density: 1.12e-9
+  poisson: 0.495
+  c10: 0.155
+  c01: 0.038
+  bulk_modulus: 800
+
+tpu_shore60d:                     # stiff TPU — hubs, sprockets, semi-rigid armour
+  law: ogden
+  density: 1.20e-9
+  poisson: 0.49
+  mu: [1.60, -0.05]
+  alpha: [1.5, -2.0]
+  bulk_modulus: 4000
+
+silicone_60a:
+  law: mooney_rivlin
+  density: 1.10e-9
+  poisson: 0.499
+  c10: 0.08
+  c01: 0.02
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# Orthotropic shells (FABRI / Law 19)
+# ══════════════════════════════════════════════════════════════════════════
+#
+# `law: fabric` maps to Radioss /MAT/FABRI (Law 19) — a simple orthotropic
+# elastic shell.  Requires /PROP/SH_ORTH (TYPE9) property, emitted
+# automatically for quad/tri elements.  No built-in yield or failure
+# criterion; use a `failure:` block for element erosion.
+#
+# Use these for thin-shell (quad/tri) composite parts.  For thick-shell
+# composites with Tsai-Wu failure, see the COMPSH entries below.
+
+carbon_ud_t700_shell:
+  law: fabric
+  density: 1.58e-9
+  e11: 135000
+  e22: 10000
+  nu12: 0.30
+  g12: 5000
+  g23: 3800
+  g31: 5000
+
+eglass_woven_7781_shell:
+  law: fabric
+  density: 1.99e-9
+  e11: 25000
+  e22: 25000
+  nu12: 0.12
+  g12: 4000
+  g23: 3000
+  g31: 3000
+
+nylon_ccf_shell:                  # continuous carbon fibre in nylon (Markforged class)
+  law: fabric
+  density: 1.40e-9
+  e11: 54000                # fibre direction — printed laminate, not autoclave
+  e22: 3000                 # matrix-dominated; nylon, so genuinely weak
+  nu12: 0.30
+  g12: 1500
+  g23: 1000
+  g31: 1500
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# Orthotropic composites (COMPSH / Law 25)
+# ══════════════════════════════════════════════════════════════════════════
+#
+# `law: compsh` maps to Radioss /MAT/COMPSH (Law 25) with Tsai-Wu failure
+# criterion.  Requires hexahedral elements with a `layup:` block for
+# composite thick-shell (TSH_COMP) properties.  NOT compatible with
+# thin-shell quad/tri elements — use `law: fabric` variants above instead.
+#
+# Elastic constants: e11 (fibre), e22 (transverse), nu12, g12, g23, g31.
+# Yield stresses: sigma_1yt/1yc (tension/compression dir 1), sigma_2yt/2yc.
+# Optional failure strains: eps_f1, eps_f2, dmax.
+
+carbon_ud_t700:
+  law: compsh
+  density: 1.58e-9
+  e11: 135000               # MPa (fibre direction)
+  e22: 10000                # MPa (transverse)
+  nu12: 0.30
+  g12: 5000
+  g23: 3800
+  g31: 5000
+  sigma_1yt: 2200           # tension dir 1
+  sigma_2yt: 50
+  sigma_1yc: 1500           # compression dir 1
+  sigma_2yc: 200
+  eps_f1: 0.015
+  eps_f2: 0.015
+  dmax: 0.999
+
+eglass_woven_7781:
+  law: compsh
+  density: 1.99e-9
+  e11: 25000                # balanced weave
+  e22: 25000
+  nu12: 0.12
+  g12: 4000
+  g23: 3000
+  g31: 3000
+  sigma_1yt: 440
+  sigma_2yt: 440
+  sigma_1yc: 400
+  sigma_2yc: 400
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# Stand-ins
+# ══════════════════════════════════════════════════════════════════════════
+
+# Rigid-ish elastic stand-in for anvils, strikers and fixtures.
+steel_elastic:
+  law: elastic
+  density: 7.85e-9
+  young: 205000
+  poisson: 0.30
+
+# The arena floor / a rigid opponent: stiff, heavy, no plasticity to muddy
+# the energy balance. Pair with a `contact:` block.
+arena_floor_elastic:
+  law: elastic
+  density: 7.85e-9
+  young: 210000
+  poisson: 0.30

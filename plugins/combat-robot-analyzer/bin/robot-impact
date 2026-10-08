@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Entry point for the combat-robot-analyzer plugin: enters the plugin's
+# nix-shell (gmsh, OpenRadioss, the sim Python) and runs `python3 -m cra`, so
+# callers need neither a working directory nor a shell of their own.
+#
+#   robot-impact init STEP CASE | show CASE | set CASE JSON | materials [Q]
+#   robot-impact scope CASE | build CASE | solve CASE [-nt N] | results CASE
+#   robot-impact test     run the plugin's own tests
+#   robot-impact shell    an interactive shell with everything on PATH
+set -euo pipefail
+
+ROOT=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)
+
+# Run a command inside the nix-shell, quoting each argument so paths with
+# spaces (and JSON) survive the trip through --run.
+in_shell() {
+  local quoted=""
+  for arg in "$@"; do quoted+=" $(printf '%q' "$arg")"; done
+  if [ -n "${CRA_IN_SHELL:-}" ]; then
+    eval "$quoted"
+  else
+    nix-shell "$ROOT/shell.nix" --run "$quoted"
+  fi
+}
+
+case "${1:-}" in
+  ""|-h|--help) awk 'NR>1 && /^#/ { sub(/^# ?/, ""); print; next } NR>1 { exit }' "$(readlink -f "${BASH_SOURCE[0]}")" ;;
+  test) shift; in_shell python3 -m pytest -q "$ROOT/sim/tests" "$ROOT/tests" "$@" ;;
+  shell) nix-shell "$ROOT/shell.nix" ;;
+  *) in_shell python3 -m cra "$@" ;;
+esac

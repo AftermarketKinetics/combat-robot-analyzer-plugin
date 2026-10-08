@@ -1,0 +1,13 @@
+{
+  "roots": ["plugins/combat-robot-analyzer"],
+  "include": ["shell.nix"],
+  "extensions": [".py", ".sh", ".nix"],
+  "ignore": [
+    "**/__pycache__/*",
+    "**/__init__.py",
+    "plugins/combat-robot-analyzer/tests/*",
+    "plugins/combat-robot-analyzer/sim/tests/*",
+    "plugins/combat-robot-analyzer/fixtures/*"
+  ],
+  "sidecar_suffix": ".md"
+}

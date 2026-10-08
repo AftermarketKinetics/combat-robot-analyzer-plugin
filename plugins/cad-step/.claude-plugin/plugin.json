@@ -1,0 +1,19 @@
+{
+  "name": "cad-step",
+  "description": "Analyze STEP/STP CAD files: assembly trees, part placements and coordinate frames, hole and bolt-circle tables, mass properties, clash detection, fastener bills of materials, SVG technical drawings, entity queries and revision diffs.",
+  "version": "0.2.0",
+  "author": {
+    "name": "Lily Lin",
+    "email": "lily.lin2719@gmail.com"
+  },
+  "keywords": [
+    "cad",
+    "step",
+    "stp",
+    "iso-10303",
+    "mechanical",
+    "assembly",
+    "geometry",
+    "brep"
+  ]
+}

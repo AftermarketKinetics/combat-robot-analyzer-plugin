@@ -1,0 +1,6 @@
+v1's impactor model (inherited into v2) fired a deformable tooth along the struck surface's normal from a clamped target for a fixed 40 µs; Lily rejected all four choices after the first real run, so treat v1 load-case physics as a starting point, not a validated spec.
+
+- Symptoms on inertial-v6 (12 lb horizontal, 4130 shell): the S7 head reached 1.62 plastic strain and 1,787 MPa (a thin head crushed by a heavy lumped backing block), ~95% of the 2,500 J was still kinetic at 40 µs, and the tooth could never glance off armour because its velocity was the surface normal.
+- Lily's calls (2026-10-08): weapon is a **rigid** tooth on a **spinning** rigid body (arc through the strike point, `I = m_eff·R²`, `ω = v_tip/R`); the robot is **free with its real mass** (no clamp); the run lasts **until the hit is over** (estimated end_time + post-solve energy check); materials **erode** at `eps_max` via /FAIL cards; up axis inferred (thinnest dimension) and confirmed by the agent.
+- Also found: LAW2's `EPS_p_max` does not delete solid elements in this deck (0.51 strain on a 0.28-limit shell, no erosion) — erosion needs explicit /FAIL cards.
+- How to apply: when a v1 physics choice looks arbitrary in a result, surface it with numbers and options rather than defending it from v1's docs; v1's docs record why a choice was cheap, not that it was right.
