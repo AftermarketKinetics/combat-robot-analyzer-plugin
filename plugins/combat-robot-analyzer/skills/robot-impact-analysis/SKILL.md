@@ -72,7 +72,8 @@ for example `./impact/<robot>-<weapon>`. It holds everything the case produces.
    `over_budget` is set, offer a coarser `mesh_size` or a shorter `end_time`,
    or the long wait; only pass `--allow-over-budget` if the user accepts.
    Pass on the build's warnings, such as a re-mesh to remove degenerate
-   elements.
+   elements. Before changing `mesh_size`, or when a build is refused or slow,
+   read [reference/meshing.md](reference/meshing.md).
 7. **Solve**, then **results**. Explain whether the part survived, where
    strain concentrated, how much material eroded, and the quality warnings
    (state those before the conclusions). Lead with the answer to the user's
