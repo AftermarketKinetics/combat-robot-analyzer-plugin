@@ -1,7 +1,7 @@
 {
   "name": "combat-robot-analyzer",
   "description": "Simulate an opponent's spinning weapon hitting a combat robot's own STEP CAD with OpenRadioss: materials, preset or custom weapons, meshing, solving and damage results, run locally under nix-shell.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": {
     "name": "Lily Lin",
     "email": "lily.lin2719@gmail.com"

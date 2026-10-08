@@ -59,6 +59,48 @@ the wall thickness. The same case re-meshed at a 3 mm far size was clean:
 | Many tiny features (fillets, text, holes) near the strike | They force small elements and a small timestep. Prefer simplified CAD of the struck part; aim away from them if the user agrees. |
 | Model in inches or with odd units | `init` reports the model's units and size; check the overall dimensions look right (mm) before setting anything else. |
 
+## Fixes that look right but don't work
+
+These were tried while building the pipeline. Don't suggest them to the user,
+and don't reach for them when a build misbehaves.
+
+- **gmsh's size options are targets, not floors.** `Mesh.MeshSizeMin` limits
+  the size gmsh *aims for*, not the elements it produces; gmsh's author calls
+  them "soft constraints". With the Frontal fallback the minimum is not passed
+  to the mesher at all. A minimum size never proves a mesh has no tiny or
+  needle elements. Only the measured quality does, which is why the build
+  checks every element after meshing.
+- **`Mesh.ToleranceEdgeLength` breaks faces instead of fixing micro-edges.**
+  It drops a short CAD edge from the mesh but leaves it in the model, so the
+  face's outline is left open and 2D meshing fails with "The 1D mesh seems not
+  to be forming a closed loop (N boundary nodes are considered once)". N tracks
+  the number of short edges; no tolerance value helps. gmsh's OCC healing
+  options (`Geometry.OCCFixSmallEdges`, `Geometry.Tolerance`) fail too: the
+  solid comes back as loose surfaces and the volume mesh is empty. Removing a
+  short edge means extending its neighbours to meet, which is real CAD repair.
+  If micro-edges near the strike are the problem, ask the user for simplified
+  CAD.
+- **A zero-length edge is usually not a defect.** OpenCASCADE puts one at
+  every cone tip and sphere pole on purpose (`BRep_Tool.Degenerated` is true).
+  On `inertial-v6` all 16 zero-length edges were of that kind. The STEP
+  analysis's shortest-edge figure (`min_edge_mm`) skips them, so it never
+  shows 0. Don't treat zero-length edges as damaged CAD.
+
+## Tiny gaps cost more than big ones
+
+The solver's timestep is set by the smallest element anywhere in the model, so
+one microscopic sliver slows every element on every cycle. A real build was
+priced at 3,699× its budget (dt = 5e-13 s) because a stand-in block's
+bounding box overhung the target by 10 nanometres, from floating-point noise in
+the CAD kernel. Fusing the blocks turned that overhang into a 10 nm solid.
+
+The build now snaps every stand-in corner to a 1 µm grid
+(`STANDIN_SNAP_MM`), so this exact case is gone. The pattern still applies: if a build is
+over budget by orders of magnitude with a timestep far below what the element
+size would give, look for near-coincident geometry (parts that almost but
+don't quite touch), not mesh size. Raising `mesh_size` won't help; excluding
+the part involved, or `standins: false` if it is a stand-in, will.
+
 ## Reading a build's numbers
 
 - **`elements`**: the cost driver together with the timestep. 50–200k is
