@@ -10,13 +10,15 @@ A Claude Code plugin marketplace for combat robot engineering.
 ## Install in Claude Code
 
 ```
-/plugin marketplace add ~/code/accelerate-analyzer
+/plugin marketplace add AftermarketKinetics/combat-robot-analyzer-plugin
 /plugin install combat-robot-analyzer@accelerate-analyzer
 /plugin install cad-step@accelerate-analyzer
 ```
 
-Once the repo is on GitHub, the marketplace can also be added by its
-`owner/repo` name instead of the local path.
+To work from a local clone instead, pass its path to `marketplace add`
+(e.g. `/plugin marketplace add ~/code/accelerate-analyzer`); the install
+commands stay the same, since `@accelerate-analyzer` is the marketplace's
+`name` in `.claude-plugin/marketplace.json`, not the repo name.
 
 Both plugins need [Nix](https://nixos.org/download): every tool (gmsh,
 OpenRadioss, pythonocc, the Python libraries) comes from a pinned nixpkgs. The
